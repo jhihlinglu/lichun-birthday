@@ -83,7 +83,7 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
   <div id="tease"></div>
 </div>
 <p id="sub" aria-live="polite" style="margin:0"></p>
-<div id="end"><button id="replay">再聽一次</button></div>
+<div id="end"><button id="replay">AGAIN</button></div>
 <div id="ask"><p id="askText"></p><div id="askBtns"><button id="yes">YES</button><button id="no">NO</button></div></div>
 
 <div id="intro">
@@ -97,27 +97,27 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
 const NAME='LiChun';
 const BIRTHDAY={month:'NOV',day:18,label:'11.18'};
 const COPY={
-  intro:`有一個房間，<br>替 ${NAME} 留著燈`,
+  intro:`準備一個神祕小屋，<br>替 俐君 留著燈火`,
   tracks:[
-    {name:'唱片',text:'有些歌，只要唱針一落下，就會想起你。'},
-    {name:'相框',text:'香港的夜景，是我們一起看過的風景。'},
-    {name:'便利貼',text:'你的大小事，我都記得。'},
-    {name:'香菇',text:'唯獨香菇，絕對不行。'},
-    {name:'貓貓',text:'連貓都知道，你最喜歡牠們了。'},
-    {name:'蛋糕',text:'許個願吧。'}
+    {name:'唱片',text:'來點音樂，氣氛一下吧~ MUSIC START~'},
+    {name:'相框',text:'我們在維多利亞港的星光大道，一起看的香港夜景~'},
+    {name:'便利貼',text:'妳屁股有幾根毛我都了然於心~'},
+    {name:'香菇',text:'香菇!!是絕對不行的!! 錯過了好多菇菇料理~'},
+    {name:'貓貓',text:'貓貓或許是妳我未來的玩伴?!'},
+    {name:'蛋糕',text:'大力許下妳今年的希望吧~'}
   ],
-  notes:['做指甲','不擅長摺衣服','小潔癖','喜歡寵物'],
+  notes:['高單價坪數的指甲','積山的衣服','小小潔癖','喜歡小寵物'],
   sideB:{
-    tracks:['翻面','求婚'],
-    flip:'還有一面，想放給你聽。',
-    propose:'這一次，我想認真問你一個問題。',
-    ask:`${NAME}，你願意和我結婚嗎？`,
-    yes:'謝謝你說 YES。往後的每一面，我們一起聽。',
+    tracks:['翻面!!','求婚'],
+    flip:'還有一面，想另外放給妳聽~',
+    propose:'不知道妳剛剛的生日願望有沒有剛好許到，我們的未來~',
+    ask:'俐君，妳願意和我結婚、走後半輩子嗎?',
+    yes:'我就知道妳會YES~ 未來的未來，我們共同體驗每一個時刻~',
     noTries:['再想想？','真的嗎？','按不到喔']
   },
   teaseMouse:'移動游標，逗逗牠',
   teaseTouch:'手指滑動，逗逗牠',
-  ending:`生日快樂，${NAME}。願新的一歲，每一場煙火都有人陪你看。`
+  ending:'生日快樂，俐君~ 願新的一年，也能過得像煙火一樣燦爛奪目~'
 };
 </script>
 
@@ -829,18 +829,21 @@ let blitZ=1,blitOx=0,blitOy=0;
       g.fillStyle=`rgb(${qz(r0)},${qz(g0)},${qz(b0)})`;g.fillRect(cx+x,cy+y,1,1)}};
   const PT='#e9ebf2',PT2='#9aa0b4',PT3='#5d6276',STAR=['...X...','...X...','..XXX..','XXXXXXX','..XXX..','...X...','...X...'];
   let lastHeart=-1;
-  SC.ring=(q,t)=>{const open=ss(.16,.42,q),yes=yesAt>0?t-yesAt:-1,glows=[];
+  SC.ring=(q,t)=>{const open=ss(.12,.38,q),up=ss(.38,.6,q),yes=yesAt>0?t-yesAt:-1,glows=[];
     g.drawImage(bg.c,0,0);
     for(const o of bk){const x=o.x+Math.sin(t*.15+o.p)*6,y=o.y+Math.cos(t*.12+o.p)*4;g.drawImage(orb(o.s,o.c).c,(x-o.s)|0,(y-o.s)|0)}
     const bx=180,top=110;
     Ell(bx,178,92,8,'#0a060c');
-    if(open>.06){const H=Math.round(72*ss(.06,1,open)),y0=top-2-H;R(bx-70,y0,140,H+2,'#1b2a5c');if(H>5)g.drawImage(lining.c,0,0,128,H-4,bx-64,y0+3,128,H-4);R(bx-70,y0,140,2,'#2c428a')}
+    let lidTop=top;
+    if(open>.06){const H=Math.round(72*ss(.06,1,open)),y0=top-2-H;lidTop=y0+3;R(bx-70,y0,140,H+2,'#1b2a5c');if(H>5)g.drawImage(lining.c,0,0,128,H-4,bx-64,y0+3,128,H-4);R(bx-70,y0,140,2,'#2c428a')}
     R(bx-68,top,136,66,'#1b2a5c');Dth(bx-68,top,136,66,'#24387a',(u,v)=>(1-v)*.5);R(bx-68,top,136,1,'#3a54a8');R(bx-68,top+65,136,1,'#0c1430');R(bx-68,top,2,66,'#2c428a');R(bx-68,top+12,136,1,'#0c1430');
     if(open<=.06){R(bx-70,top-14,140,16,'#22356f');R(bx-70,top-14,140,1,'#3a54a8');R(bx-70,top+1,140,1,'#0c1430')}
     else{
       R(bx-62,top-8,124,12,'#14204a');R(bx-62,top-8,124,1,'#22356f');R(bx-30,top-3,60,2,'#0a1030');
+      /* the ring only rises out of the cushion slot once the lid is open, and is clipped to the opened lid */
+      if(up>0){g.save();g.beginPath();g.rect(bx-70,lidTop,140,top-3-lidTop);g.clip();
       /* PR01516U-CFG: white Akoya pearl, three round diamonds stacked on each side, polished white-gold band */
-      const rise=Math.round(lerp(8,0,ss(.2,.5,open))),rcx=bx,rcy=top-34+rise,ecy=rcy+6,ex=40,ey=19;
+      const rise=Math.round(lerp(52,0,up)),rcx=bx,rcy=top-34+rise,ecy=rcy+6,ex=40,ey=19;
       /* the band is a ribbon: broad polished face at the front, thinner edge behind */
       for(let a=0;a<360;a+=.7){const ra=a*Math.PI/180,c=Math.cos(ra),sn=Math.sin(ra),w=sn>0?7:4;
         for(let k=0;k<w;k++){const x=rcx+c*(ex-k),y=ecy+sn*(ey-k*.9);P(x,y,k===0||k===w-1?'#3a3f55':sn>0?(k===2&&Math.abs(c)<.85?'#ffffff':k<4?PT:PT2):(k===1?PT:PT2))}}
@@ -849,7 +852,8 @@ let blitZ=1,blitOx=0,blitOy=0;
       for(const sd of [-1,1]){[[17,-9],[20,-2],[18,5]].forEach((d,i)=>{const x=rcx+sd*d[0],y=rcy+d[1];gem(x,y);if(Math.sin(t*3.1+i*1.9+sd*1.3)>.95)S(['.X.','XXX','.X.'],x-1,y-1,'#ffffff')})}
       const py=rcy-2;pearl(rcx,py,13,-.45+Math.sin(t*.7)*.22,-.55);
       if(Math.sin(t*1.3)>.95)S(STAR,rcx-8,py-12,'#ffffff');
-      glows.push({x:rcx,y:py,r:30,c:'#fff4f0',a:.16*open},{x:bx,y:top-20,r:120,c:'#ffe7c7',a:.14*open})}
+      g.restore();
+      glows.push({x:rcx,y:py,r:30,c:'#fff4f0',a:.16*up},{x:bx,y:top-20,r:120,c:'#ffe7c7',a:.14*up})}}
     /* after YES: heart-shaped fireworks and falling petals */
     if(yes>=0){const k0=Math.floor(yes/1.1);
       for(let i=Math.max(0,k0-3);i<=k0;i++){const tau=yes-i*1.1;if(tau<0||tau>2.6)continue;const r=rng(i*53+7),side=i%2?1:-1,cx=180+side*(58+r()*44),cy=34+r()*60,sc=lerp(.65,.95,r())*2.1,col=[PAL.rose,PAL.pink,PAL.gold,'#ff8fb1'][r()*4|0];
@@ -867,7 +871,7 @@ let blitZ=1,blitOx=0,blitOy=0;
 const NODES=[
   {id:'vinyl',x:103,y:248,h:62,r:.05,q0:.16,q1:.92},
   {id:'photo',x:244,y:136,h:82,r:-.015,len:6,q0:.22,q1:.94},
-  {id:'cork',x:394,y:128,h:82,r:0,len:6.2,q0:.1,q1:.94},
+  {id:'cork',x:394,y:128,h:82,r:0,len:8.3,q0:.1,q1:.94},
   {id:'mush',x:512,y:262,h:40,r:-.03,len:6.4,q0:.62,q1:.96},
   {id:'cat',x:610,y:334,h:78,r:.02,len:7,q0:.76,q1:.97}
 ];
@@ -1156,7 +1160,7 @@ for(let i=0;i<6;i++)edges.push({u:a7+(.14+i*.05)*(b7-a7),f:()=>A.strike()});
 edges.push({u:BLOW-.1,f:()=>A.blow()});
 {const fl=scenes.find(x=>x.id==='flip'),pr=scenes.find(x=>x.id==='propose'),rg=scenes[RING];
   edges.push({u:qu(fl,.03),f:()=>A.click()},{u:qu(fl,.4),f:()=>A.page()},{u:qu(fl,.79),f:()=>A.needle()});
-  edges.push({u:qu(pr,.46),f:()=>A.pop()},{u:qu(rg,.22),f:()=>A.chime()})}
+  edges.push({u:qu(pr,.46),f:()=>A.pop()},{u:qu(rg,.42),f:()=>A.chime()})}
 
 /* autoplay holds here so the moment can happen in the room: after the candles are lit, on the fireworks, and while kneeling */
 const CUES=[qu(scenes.find(x=>x.id==='cake'),.56),qu(scenes.find(x=>x.id==='fire'),.66),qu(scenes.find(x=>x.id==='propose'),.42)];
