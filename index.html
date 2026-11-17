@@ -828,8 +828,46 @@ let blitZ=1,blitOx=0,blitOy=0;
       const b=bay(x+r,y+r)-.5,qz=v=>Math.max(0,Math.min(255,Math.round(v/13+b)*13));
       g.fillStyle=`rgb(${qz(r0)},${qz(g0)},${qz(b0)})`;g.fillRect(cx+x,cy+y,1,1)}};
   const PT='#e9ebf2',PT2='#9aa0b4',PT3='#5d6276',STAR=['...X...','...X...','..XXX..','XXXXXXX','..XXX..','...X...','...X...'];
+  /* ASCII light show around the reveal, drawn as real text at screen resolution on top of the pixel scene:
+     light leaking from the lid -> a whirlwind that gets sucked into the slot -> an eruption -> a halo.
+     Everything is a function of q, so scrolling back and forth scrubs it cleanly. */
+  const MONO='ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace';
+  const BURST=.42,easeBack=x=>{const c1=1.9;return 1+(c1+1)*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+  const PARTS=(()=>{const r=rng(77),a=[];for(let i=0;i<150;i++){const ang=-Math.PI/2+(r()-.5)*2.1,sp=90+r()*140;
+    a.push({vx:Math.cos(ang)*sp*.9,vy:Math.sin(ang)*sp,life:1+r()*1.1,ch:"**+.'`o^:@"[r()*10|0],c:[PAL.gold,'#fff4dd','#ffd9e2','#bcd8ff',PAL.gold][r()*5|0],sz:4.2+r()*3.4})}return a})();
+  const SPARK=(()=>{const r=rng(31),a=[];for(let i=0;i<18;i++)a.push({x:180+(r()-.5)*190,y:14+r()*84,p:r()});return a})();
+  const fx=(c,q,t,top,bx,open,yes)=>{
+    let font='';const ch=(s,x,y,sz,col,al)=>{if(al<=.02)return;const f=`bold ${sz}px ${MONO}`;if(f!==font){c.font=f;font=f}c.globalAlpha=Math.min(1,al);c.fillStyle=col;c.fillText(s,x,y)};
+    c.save();c.textAlign='center';c.textBaseline='middle';c.globalCompositeOperation='lighter';
+    /* 1. light leaking out of the lid gap */
+    const leak=ss(.06,.16,q)*(1-ss(.39,.44,q));
+    if(leak>0){const n=13;for(let i=0;i<n;i++){const f=i/(n-1)-.5,ang=f*2,sx=bx+f*100,sy=top-6,dx=Math.sin(ang),dy=-Math.cos(ang);
+      const len=(20+46*open+10*ss(.3,.4,q))*(.72+.28*Math.sin(i*2.3+t*6))*leak,gl=Math.abs(ang)<.22?'|':ang<0?'\\':'/';
+      for(let s=3;s<len;s+=4.4)ch(gl,sx+dx*s,sy+dy*s,4.2,s<len*.4?'#fff4dd':PAL.gold,leak*(1-s/len)*(.65+.35*Math.sin(t*9+i+s)))}}
+    /* 2. whirlwind funnel that spins faster and is pulled into the slot */
+    const sw=ss(.2,.29,q)*(1-ss(BURST-.015,BURST+.01,q)),pull=ss(.33,BURST,q);
+    if(sw>0){const H=78*ss(.2,.32,q)*(1-pull*.6),spin=t*(4+8*pull)+q*40;
+      for(let h=0,row=0;h<H;h+=5.2,row++){const r=(7+h*.66)*(1-pull*.82)*(.9+.1*Math.sin(t*3+row)),n=5+row*1.3|0,wob=Math.sin(t*2.2+row*.5)*2.5*(1-pull);
+        for(let k=0;k<n;k++){const ph=k/n*6.283+spin*(1+row*.05)+row*.7,dz=Math.sin(ph),x=bx+Math.cos(ph)*r+wob,y=top-8-h*(1-pull*.35)+dz*r*.2,front=dz>0;
+          ch(front?(dz>.75?'@':dz>.35?'O':'o'):(dz<-.6?'.':':'),x,y,4.3,front?'#fff4dd':'#9fb4ff',sw*(front?1:.45))}}}
+    /* 3. eruption: particles, a shockwave ring, falling back under gravity */
+    const tau=(q-BURST)*8*1.35;
+    if(tau>0&&tau<2.6){
+      /* geyser column shooting straight up out of the slot */
+      if(tau<.8){const Hg=120*Math.min(1,tau/.14),fa=1-tau/.8;for(let h=0;h<Hg;h+=4.6){const j=Math.sin(h*1.7+t*40)*(1.5+h*.04);ch('|!:'[(h/4.6|0)%3],bx+j,top-8-h,5.6,h<Hg*.5?'#fff4dd':PAL.gold,fa*(1-h/Hg*.5))}}
+      for(const p of PARTS){if(tau>p.life)continue;const x=bx+p.vx*tau*.6,y=top-8+p.vy*tau*.6+48*tau*tau;ch(p.ch,x,y,p.sz,p.c,(1-tau/p.life)*1.3)}
+      if(tau<1.1){const k=tau/1.1,R=10+160*(1-Math.pow(1-k,2.4));for(let i=0;i<56;i++){const a=i/56*6.283;ch(i%2?'~':'=',bx+Math.cos(a)*R,top-4+Math.sin(a)*R*.24,4.6,'#ffe7c7',(1-k)*.9)}}}
+    /* 4. halo: rotating rays and twinkling stars around the ring */
+    const halo=ss(.47,.6,q)*(yes>=0?.7:1);
+    if(halo>0){const cx=bx,cy=top-36;
+      /* rays flow outward: characters slide along each ray and are swapped for smaller ones as they travel */
+      for(let i=0;i<18;i++){const a=i/18*6.283+t*.22,L=(i%2?26:44)*halo*(.85+.15*Math.sin(t*2.4+i)),tw=.75+.25*Math.sin(t*3+i*1.7);
+        for(let r=(t*12+i*1.3)%5.5;r<L;r+=5.5){const R=46+r,x=cx+Math.cos(a)*R,y=cy+Math.sin(a)*R*.72;if(y>top-6)continue;const f=r/L;
+          ch(f<.22?'*':f<.5?'+':f<.78?':':'.',x,y,f<.3?5.6:4.6,f<.3?'#fff4dd':PAL.gold,halo*(1-f*.7)*tw*1.25)}}
+      for(const s of SPARK){const ph=(t*.75+s.p)%1;ch(ph<.2?'.':ph<.4?'+':ph<.6?'*':ph<.8?'+':'.',s.x,s.y,4.8,'#fff4dd',halo*Math.sin(ph*Math.PI))}}
+    c.restore()};
   let lastHeart=-1;
-  SC.ring=(q,t)=>{const open=ss(.12,.38,q),up=ss(.38,.6,q),yes=yesAt>0?t-yesAt:-1,glows=[];
+  SC.ring=(q,t)=>{const open=ss(.08,.26,q),up=clamp((q-BURST)/.09),yes=yesAt>0?t-yesAt:-1,glows=[];
     g.drawImage(bg.c,0,0);
     for(const o of bk){const x=o.x+Math.sin(t*.15+o.p)*6,y=o.y+Math.cos(t*.12+o.p)*4;g.drawImage(orb(o.s,o.c).c,(x-o.s)|0,(y-o.s)|0)}
     const bx=180,top=110;
@@ -843,7 +881,7 @@ let blitZ=1,blitOx=0,blitOy=0;
       /* the ring only rises out of the cushion slot once the lid is open, and is clipped to the opened lid */
       if(up>0){g.save();g.beginPath();g.rect(bx-70,lidTop,140,top-3-lidTop);g.clip();
       /* PR01516U-CFG: white Akoya pearl, three round diamonds stacked on each side, polished white-gold band */
-      const rise=Math.round(lerp(52,0,up)),rcx=bx,rcy=top-34+rise,ecy=rcy+6,ex=40,ey=19;
+      const rise=Math.round(52*(1-easeBack(up))),rcx=bx,rcy=top-34+rise,ecy=rcy+6,ex=40,ey=19;
       /* the band is a ribbon: broad polished face at the front, thinner edge behind */
       for(let a=0;a<360;a+=.7){const ra=a*Math.PI/180,c=Math.cos(ra),sn=Math.sin(ra),w=sn>0?7:4;
         for(let k=0;k<w;k++){const x=rcx+c*(ex-k),y=ecy+sn*(ey-k*.9);P(x,y,k===0||k===w-1?'#3a3f55':sn>0?(k===2&&Math.abs(c)<.85?'#ffffff':k<4?PT:PT2):(k===1?PT:PT2))}}
@@ -863,8 +901,12 @@ let blitZ=1,blitOx=0,blitOy=0;
         if(tau<.8)glows.push({x:cx,y:cy,r:90,c:col,a:(1-tau/.8)*.45})}
       for(let i=0;i<54;i++){const r=rng(i*13+3),sx=r()*VW,sp=14+r()*16,y=((yes*sp+r()*230)%230)-20,x=sx+Math.sin(yes*1.4+i)*12,c=i%3?PAL.pink:PAL.rose;R(x,y,4,3,c);R(x+1,y-1,2,1,c);P(x+1,y,'#fff0f0')}}
     else lastHeart=-1;
+    /* glow under the ASCII show: warm leak, cold whirlwind, white flash on the eruption */
+    const tau=(q-BURST)*8*1.35,flash=tau>0?Math.max(0,1-tau/.45):0,shake=reduced||tau<=0?0:3*Math.max(0,1-tau/.5);
+    glows.push({x:bx,y:top-12,r:90,c:'#ffe7c7',a:.3*ss(.06,.16,q)*(1-ss(.39,.44,q))},{x:bx,y:top-30,r:70,c:'#9fb4ff',a:.28*ss(.2,.29,q)*(1-ss(.4,.43,q))},{x:bx,y:top-14,r:170,c:'#fff4f0',a:.9*flash});
     const zq=lerp(1.02,1.3,ss(0,.6,q)),back=yes>=0?ss(0,1.8,yes):0;
-    return {zoom:lerp(zq,1.06,back),oy:lerp(lerp(0,12,ss(0,.6,q)),4,back),rot:Math.sin(t*.4)*.003,glows}};
+    return {zoom:lerp(zq,1.06,back),ox:Math.sin(t*73)*shake,oy:lerp(lerp(0,12,ss(0,.6,q)),4,back)+Math.cos(t*61)*shake,rot:Math.sin(t*.4)*.003,glows,
+      after:c=>fx(c,q,t,top,bx,open,yes)}};
 })();
 
 /* ---------- timeline ---------- */
@@ -907,8 +949,8 @@ scenes.push({id:'flip',a:a9,b:b9,sub:COPY.sideB.flip,label:['SIDE B',COPY.sideB.
 const a10=b9-.4,b10=a10+7;
 scenes.push({id:'propose',a:a10,b:b10,sub:COPY.sideB.propose,label:['TRACK B1',COPY.sideB.tracks[1]],q0:.03,q1:.98});
 const a11=b10-.4;
-const RING=scenes.push({id:'ring',a:a11,b:a11+999,hold:true,len:6,sub:'',label:['TRACK B1',COPY.sideB.tracks[1]],q0:2,q1:2})-1;
-const TOTAL=a11+6.05;
+const RING=scenes.push({id:'ring',a:a11,b:a11+999,hold:true,len:8,sub:'',label:['TRACK B1',COPY.sideB.tracks[1]],q0:2,q1:2})-1;
+const TOTAL=a11+8.05;
 const FLIP_UP=a9+.03*7,NEEDLE_B=a9+.79*7;
 const NEEDLE=scenes[0].a+.38*(scenes[0].b-scenes[0].a);
 const IGNITE=a7+.14*(b7-a7),BLOW=a7+.74*(b7-a7);
@@ -1064,6 +1106,11 @@ const A=(()=>{let c=null,master,verb,sfx,noise,muted=false,hidden=false,song='';
     blow(){if(!c)return;const t=c.currentTime;const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=noise;f.type='bandpass';f.frequency.value=800;f.Q.value=.4;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.22,t+.15);g.gain.linearRampToValueAtTime(.0001,t+.8);s.connect(f);f.connect(g);g.connect(sfx);s.start(t);s.stop(t+.85)},
     boom(big){if(!c)return;const t=c.currentTime+.08+Math.random()*.2;const o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(big?90:120,t);o.frequency.exponentialRampToValueAtTime(34,t+.5);env(g.gain,t,.005,big?.34:.2,.8);o.connect(g);g.connect(sfx);o.start(t);o.stop(t+1);nz(t,big?.8:.5,'lowpass',1600,big?.13:.08,.5,sfx);
       for(let i=0;i<8;i++)nz(t+.35+Math.random()*.7,.02,'highpass',5000,.035,1,sfx)},
+    whoosh(){if(!c)return;const t=c.currentTime,s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=noise;s.loop=true;f.type='bandpass';f.Q.value=1.6;
+      f.frequency.setValueAtTime(260,t);f.frequency.exponentialRampToValueAtTime(2600,t+1.9);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.16,t+1.7);g.gain.linearRampToValueAtTime(.0001,t+2.05);
+      s.connect(f);f.connect(g);out(g,.4,sfx);s.start(t);s.stop(t+2.1)},
+    burst(){if(!c)return;const t=c.currentTime;const o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(40,t+.35);env(g.gain,t,.004,.3,.5);o.connect(g);out(g,.3,sfx);o.start(t);o.stop(t+.6);
+      nz(t,.5,'lowpass',2200,.16,.6,sfx);for(let i=0;i<10;i++)nz(t+.1+Math.random()*.9,.02,'highpass',6000,.04,1,sfx);[96,100,103,108].forEach((m,i)=>box(t+.05+i*.06,m,.07,sfx))},
     mute(v){muted=v;if(c)fade(master.gain,v?0:.9,.2);for(const k in tr)tr[k].a.muted=v},
     suspend(h){hidden=h;if(c){h?c.suspend():c.resume()}if(h)for(const k in tr)tr[k].a.pause()},
     ready(){return !!c}}
@@ -1134,7 +1181,7 @@ for(let i=0;i<6;i++)edges.push({u:a7+(.14+i*.05)*(b7-a7),f:()=>A.strike()});
 edges.push({u:BLOW-.1,f:()=>A.blow()});
 {const fl=scenes.find(x=>x.id==='flip'),pr=scenes.find(x=>x.id==='propose'),rg=scenes[RING];
   edges.push({u:qu(fl,.03),f:()=>A.click()},{u:qu(fl,.4),f:()=>A.page()},{u:qu(fl,.79),f:()=>A.needle()});
-  edges.push({u:qu(pr,.46),f:()=>A.pop()},{u:qu(rg,.42),f:()=>A.chime()})}
+  edges.push({u:qu(pr,.46),f:()=>A.pop()},{u:qu(rg,.2),f:()=>A.whoosh()},{u:qu(rg,.42),f:()=>A.burst()})}
 
 /* autoplay holds here so the moment can happen in the room: after the candles are lit, on the fireworks, and while kneeling */
 const CUES=[qu(scenes.find(x=>x.id==='cake'),.56),qu(scenes.find(x=>x.id==='fire'),.66),qu(scenes.find(x=>x.id==='propose'),.42)];
