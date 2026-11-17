@@ -869,11 +869,11 @@ let blitZ=1,blitOx=0,blitOy=0;
 
 /* ---------- timeline ---------- */
 const NODES=[
-  {id:'vinyl',x:103,y:248,h:62,r:.05,q0:.16,q1:.92},
-  {id:'photo',x:244,y:136,h:82,r:-.015,len:6,q0:.22,q1:.94},
-  {id:'cork',x:394,y:128,h:82,r:0,len:8.3,q0:.1,q1:.94},
-  {id:'mush',x:512,y:262,h:40,r:-.03,len:6.4,q0:.62,q1:.96},
-  {id:'cat',x:610,y:334,h:78,r:.02,len:7,q0:.76,q1:.97}
+  {id:'vinyl',x:103,y:248,h:62,r:.05,q0:.03,q1:.95},
+  {id:'photo',x:244,y:136,h:82,r:-.015,len:6,q0:.03,q1:.95},
+  {id:'cork',x:394,y:128,h:82,r:0,len:8.3,q0:.03,q1:.95},
+  {id:'mush',x:512,y:262,h:40,r:-.03,len:6.4,q0:.03,q1:.96},
+  {id:'cat',x:610,y:334,h:78,r:.02,len:7,q0:.03,q1:.97}
 ];
 const N=NODES.length;
 const keys=[{u:0,x:400,y:205,h:400,r:0}];let U=0;const key=(d,x,y,h,r=0,ease)=>{U+=d;keys.push({u:U,x,y,h,r,ease})};
@@ -898,14 +898,14 @@ key(1.35,400,316,96,0);
 const a7=U-.45,b7=a7+7.2;
 key(.7,400,316,44,0);key(b7-U,400,316,44,0);
 const uRoomEnd=a7+1;
-scenes.push({id:'cake',a:a7,b:b7,sub:COPY.tracks[N].text,track:N,q0:.44,q1:.72});
+scenes.push({id:'cake',a:a7,b:b7,sub:COPY.tracks[N].text,track:N,q0:.03,q1:.72});
 const a8=b7+.15,b8=a8+9.5;
 scenes.push({id:'fire',a:a8,b:b8,sub:COPY.ending,track:99,q0:.03,q1:.97,len:9.5});
 const a9=b8-.5,b9=a9+7;
 chapters.push({i:N+1,u:a9});
-scenes.push({id:'flip',a:a9,b:b9,sub:COPY.sideB.flip,label:['SIDE B',COPY.sideB.tracks[0]],q0:.84,q1:.99});
+scenes.push({id:'flip',a:a9,b:b9,sub:COPY.sideB.flip,label:['SIDE B',COPY.sideB.tracks[0]],q0:.03,q1:.99});
 const a10=b9-.4,b10=a10+7;
-scenes.push({id:'propose',a:a10,b:b10,sub:COPY.sideB.propose,label:['TRACK B1',COPY.sideB.tracks[1]],q0:.6,q1:.98});
+scenes.push({id:'propose',a:a10,b:b10,sub:COPY.sideB.propose,label:['TRACK B1',COPY.sideB.tracks[1]],q0:.03,q1:.98});
 const a11=b10-.4;
 const RING=scenes.push({id:'ring',a:a11,b:a11+999,hold:true,len:6,sub:'',label:['TRACK B1',COPY.sideB.tracks[1]],q0:2,q1:2})-1;
 const TOTAL=a11+6.05;
@@ -1018,65 +1018,37 @@ function blit(info,a){
 }
 
 /* ---------- audio ---------- */
-const A=(()=>{let c=null,master,music,tone,verb,sfx,noise,mode='off',level=0,tm=0,step=0,next=0,muted=false,nodes={};
+/* background music: four looping songs that sit next to index.html, one per part of the story */
+const SONGS={p1:'PART 1.mp3',p2:'PART 2.mp3',p3:'PART 3.mp3',p4:'PART 4.mp3'},SONG_VOL=.85;
+const A=(()=>{let c=null,master,verb,sfx,noise,muted=false,hidden=false,song='';const nodes={},tr={};
   const m2f=m=>440*Math.pow(2,(m-69)/12);
   const impulse=(d,dec)=>{const n=c.sampleRate*d|0,b=c.createBuffer(2,n,c.sampleRate);for(let ch=0;ch<2;ch++){const a=b.getChannelData(ch);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*Math.pow(1-i/n,dec)}return b};
   const env=(p,t,a,peak,d)=>{p.setValueAtTime(.0001,t);p.linearRampToValueAtTime(peak,t+a);p.exponentialRampToValueAtTime(.0001,t+a+d)};
-  const out=(n,w=.25,bus=music)=>{n.connect(bus);const s=c.createGain();s.gain.value=w;n.connect(s);s.connect(verb)};
-  const ep=(t,m,v=.1,d=1.8)=>{const f=m2f(m),o=c.createOscillator(),md=c.createOscillator(),mg=c.createGain(),g=c.createGain();o.type='sine';md.frequency.value=f*1;mg.gain.setValueAtTime(f*1.3,t);mg.gain.exponentialRampToValueAtTime(f*.08,t+.5);md.connect(mg);mg.connect(o.frequency);o.frequency.value=f;env(g.gain,t,.006,v,d);o.connect(g);out(g,.35);o.start(t);md.start(t);o.stop(t+d+.1);md.stop(t+d+.1)};
-  const bass=(t,m,d=.6,v=.17)=>{const o=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();o.type='triangle';o.frequency.value=m2f(m);f.type='lowpass';f.frequency.value=380;env(g.gain,t,.012,v,d);o.connect(f);f.connect(g);out(g,.02);o.start(t);o.stop(t+d+.1)};
-  const pad=(t,ms,d)=>{ms.forEach(m=>{[-5,5].forEach(det=>{const o=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();o.type='sawtooth';o.frequency.value=m2f(m);o.detune.value=det;f.type='lowpass';f.frequency.value=620;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.012,t+d*.3);g.gain.linearRampToValueAtTime(.0001,t+d);o.connect(f);f.connect(g);out(g,.5);o.start(t);o.stop(t+d+.05)})})};
-  const nz=(t,d,type,fq,v,q=1,bus=music)=>{const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=noise;s.loop=true;s.loopEnd=2;f.type=type;f.frequency.value=fq;f.Q.value=q;env(g.gain,t,.002,v,d);s.connect(f);f.connect(g);out(g,.12,bus);s.start(t,Math.random());s.stop(t+d+.05)};
-  const kick=(t,v=.26)=>{const o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(115,t);o.frequency.exponentialRampToValueAtTime(46,t+.1);env(g.gain,t,.003,v,.2);o.connect(g);out(g,.02);o.start(t);o.stop(t+.3)};
-  const box=(t,m,v=.13,bus=music)=>{const f=m2f(m);[[1,1,1.9],[4.01,.3,.5],[9.2,.08,.2]].forEach(p=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=f*p[0];env(g.gain,t,.002,v*p[1],p[2]);o.connect(g);out(g,.6,bus);o.start(t);o.stop(t+p[2]+.1)})};
+  const out=(n,w=.25,bus=sfx)=>{n.connect(bus);const s=c.createGain();s.gain.value=w;n.connect(s);s.connect(verb)};
+  const nz=(t,d,type,fq,v,q=1,bus=sfx)=>{const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=noise;s.loop=true;s.loopEnd=2;f.type=type;f.frequency.value=fq;f.Q.value=q;env(g.gain,t,.002,v,d);s.connect(f);f.connect(g);out(g,.12,bus);s.start(t,Math.random());s.stop(t+d+.05)};
+  const box=(t,m,v=.13,bus=sfx)=>{const f=m2f(m);[[1,1,1.9],[4.01,.3,.5],[9.2,.08,.2]].forEach(p=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=f*p[0];env(g.gain,t,.002,v*p[1],p[2]);o.connect(g);out(g,.6,bus);o.start(t);o.stop(t+p[2]+.1)})};
   const loopNoise=(type,fq,q)=>{const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=noise;s.loop=true;f.type=type;f.frequency.value=fq;f.Q.value=q;g.gain.value=0;s.connect(f);f.connect(g);g.connect(sfx);s.start();return g};
-  const CH=[{b:41,v:[57,60,64,67]},{b:38,v:[60,64,65,69]},{b:43,v:[58,62,65,69]},{b:36,v:[58,62,64,69]}];
-  const LICK={0:[[4,72],[6,74],[8,77],[14,76]],1:[[0,74],[6,72],[10,69]],2:[[2,70],[4,72],[8,74],[12,77]],3:[[0,76],[8,72],[11,74]]};
-  const HB=[[60,3],[60,1],[62,4],[60,4],[65,4],[64,8],[60,3],[60,1],[62,4],[60,4],[67,4],[65,8],[60,3],[60,1],[72,4],[69,4],[65,4],[64,4],[62,4],[70,3],[70,1],[69,4],[65,4],[67,4],[65,12]];
-  const HBB=[['F',4],['C',16],['C',28],['F',40],['F',52],['Bb',64],['F',76],['C',84],['F',88]];
-  const HC={F:[53,60,65,69],C:[48,58,64,67],Bb:[46,58,62,65]};
-  const hbMap={};{let p=0;for(const n of HB){hbMap[p]=n;p+=n[1]}}
-  const HBLEN=108;
-  const groove=(i,t,dur)=>{const s=i%16,bar=Math.floor(i/16)%4,ch=CH[bar];
-    if(s===0&&level>=0)pad(t,ch.v.map(m=>m-0),dur*16);
-    const comp={0:.1,6:.075,10:.085};if(comp[s]&&(level>=0)){ch.v.forEach((m,k)=>ep(t+k*.012,m,comp[s]*.72))}
-    if(level>=1){if(s===0)bass(t,ch.b,1);if(s===7)bass(t,ch.b+7,.3,.11);if(s===10)bass(t,ch.b+12,.4,.12)}
-    if(level>=2){if(s===0||s===7||s===10)kick(t,s===0?.24:.17);if(s===4||s===12)nz(t,.14,'bandpass',1900,.09,.7);if(s%2===0)nz(t,.03,'highpass',7500,s%4===0?.035:.02)}
-    if(level>=3&&Math.floor(i/64)%2===1){(LICK[bar]||[]).forEach(n=>{if(n[0]===s)ep(t,n[1],.1,1.4)})}};
-  const waltz=(i,t,full)=>{const s=i%HBLEN,n=hbMap[s];if(n){box(t,n[0]+12,full?.1:.14);if(full)ep(t,n[0]+12,.06,1)}
-    const ch=HBB.find(b=>b[1]===s);if(ch){const v=HC[ch[0]];if(full){pad(t,v.slice(1),1.6);bass(t,v[0]-12,1.1,.15)}else{box(t,v[0]+12,.05)}}
-    if(s>3){const r=(s-4)%12;if(r===4||r===8){const b=HBB.filter(x=>x[1]<=s).pop();const v=HC[b?b[0]:'F'];if(full){v.slice(1).forEach(m=>ep(t,m,.03,.5));nz(t,.03,'highpass',7500,.03)}else box(t,v[r===4?1:2]+12,.035)}
-      if(full&&r===0)kick(t,.17)}};
-  const BCH=[{b:39,v:[55,58,62,65]},{b:36,v:[55,58,63,67]},{b:44,v:[55,60,63,67]},{b:46,v:[53,58,62,65]}];
-  const BMEL=[[79,82],[79,77],[75,79],[77,74]];
-  const ballad=(i,t,dur)=>{const s=i%16,bar=Math.floor(i/16)%4,ch=BCH[bar];
-    if(s===0){pad(t,ch.v,dur*16);bass(t,ch.b,dur*12,.13)}
-    if(s%2===0)ep(t,ch.v[(s/2)%4]+(s>=8?12:0),.06,1.8);
-    if(level>=1&&(s===0||s===8))box(t,BMEL[bar][s?1:0],.07)};
-  const tick=()=>{if(!c)return;const now=c.currentTime;const fin=mode==='box'||mode==='finale';const spb=mode==='sideb'?60/66:fin?60/100:60/74;const sd=spb/4;
-    if(mode==='off'||mode==='hush'){next=now+.05;return}
-    if(next<now)next=now+.04;
-    while(next<now+.16){
-      if(mode==='groove'){const sw2=step%2?sd*.22:0;groove(step,next+sw2,sd)}else if(mode==='sideb'){ballad(step,next,sd)}else{waltz(step,next,mode==='finale')}
-      step++;next+=sd}};
+  /* each song keeps its own fade level; a song that has faded out is stopped and rewound, so its part starts from the top next time */
+  const step=()=>{if(hidden)return;for(const k in tr){const s=tr[k];if(s.lock)continue;const want=k===song?1:0;
+      s.g=want>s.g?Math.min(1,s.g+.034):Math.max(0,s.g-.025);
+      try{s.a.volume=s.g*SONG_VOL}catch(e){}
+      if(s.g>0&&s.a.paused)s.a.play().catch(()=>{});
+      else if(s.g===0&&!s.a.paused){s.a.pause();s.a.currentTime=0}}};
   const init=()=>{if(c)return;c=new (window.AudioContext||window.webkitAudioContext)();master=c.createGain();master.gain.value=.9;
     const cp=c.createDynamicsCompressor();cp.threshold.value=-16;cp.ratio.value=3;master.connect(cp);cp.connect(c.destination);
-    music=c.createGain();music.gain.value=0;tone=c.createBiquadFilter();tone.type='lowpass';tone.frequency.value=4200;
-    const wob=c.createDelay(.05),lf=c.createOscillator(),lg=c.createGain();wob.delayTime.value=.012;lf.frequency.value=.42;lg.gain.value=.0016;lf.connect(lg);lg.connect(wob.delayTime);lf.start();
-    music.connect(tone);tone.connect(wob);wob.connect(master);
     verb=c.createConvolver();verb.buffer=impulse(3.4,2.5);const vg=c.createGain();vg.gain.value=.5;verb.connect(vg);vg.connect(master);
     sfx=c.createGain();sfx.gain.value=1;sfx.connect(master);
     noise=c.createBuffer(1,c.sampleRate*4,c.sampleRate);{const a=noise.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1}
     const cr=c.createBuffer(1,c.sampleRate*5,c.sampleRate);{const a=cr.getChannelData(0);let i=0;while(i<a.length){i+=(Math.random()*5200)|0;if(i<a.length)a[i]=(Math.random()*2-1)*(Math.random()>.9?.9:.3)}}
     const cs=c.createBufferSource();cs.buffer=cr;cs.loop=true;const cf=c.createBiquadFilter();cf.type='highpass';cf.frequency.value=900;nodes.crackle=c.createGain();nodes.crackle.gain.value=0;cs.connect(cf);cf.connect(nodes.crackle);nodes.crackle.connect(sfx);cs.start();
     nodes.sea=loopNoise('lowpass',480,.5);
-    setInterval(tick,40)};
+    for(const k in SONGS){const a=new Audio(encodeURI(SONGS[k]));a.loop=true;a.preload='auto';a.volume=0;const s=tr[k]={a,g:0,lock:true};
+      /* play each song once, muted, inside the light-switch click: phones only allow later play() calls on media that was started by a tap */
+      a.muted=true;const done=()=>{if(!s.g){a.pause();a.currentTime=0}a.muted=muted;s.lock=false};a.play().then(done,done)}
+    setInterval(step,40)};
   const fade=(p,v,d=.6)=>{if(!c)return;p.cancelScheduledValues(c.currentTime);p.setTargetAtTime(v,c.currentTime,d/3)};
   return{init,
-    setMode(m,lv){level=lv;if(m===mode||!c)return;const prev=mode;mode=m;step=0;next=c.currentTime+.08;
-      fade(music.gain,m==='off'?0:m==='hush'?0:m==='box'?.95:1,m==='hush'?1.6:.8);
-      fade(tone.frequency,m==='box'?6000:m==='sideb'?5200:4200,1);
-      fade(nodes.crackle.gain,m==='groove'?.05:m==='box'?.02:m==='sideb'?.035:0,.8)},
+    setSong(k){if(k===song)return;song=k;if(c)fade(nodes.crackle.gain,k==='p1'||k==='p3'?.035:0,.8)},
     bed(sea){if(!c)return;fade(nodes.sea.gain,sea*.1,1)},
     click(){if(!c)return;const t=c.currentTime;nz(t,.02,'highpass',2600,.55,1,sfx);nz(t+.05,.02,'bandpass',1200,.3,1,sfx)},
     needle(){if(!c)return;const t=c.currentTime;nz(t,.06,'lowpass',500,.7,1,sfx);nz(t+.01,.3,'highpass',3000,.08,1,sfx)},
@@ -1092,8 +1064,8 @@ const A=(()=>{let c=null,master,music,tone,verb,sfx,noise,mode='off',level=0,tm=
     blow(){if(!c)return;const t=c.currentTime;const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=noise;f.type='bandpass';f.frequency.value=800;f.Q.value=.4;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.22,t+.15);g.gain.linearRampToValueAtTime(.0001,t+.8);s.connect(f);f.connect(g);g.connect(sfx);s.start(t);s.stop(t+.85)},
     boom(big){if(!c)return;const t=c.currentTime+.08+Math.random()*.2;const o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(big?90:120,t);o.frequency.exponentialRampToValueAtTime(34,t+.5);env(g.gain,t,.005,big?.34:.2,.8);o.connect(g);g.connect(sfx);o.start(t);o.stop(t+1);nz(t,big?.8:.5,'lowpass',1600,big?.13:.08,.5,sfx);
       for(let i=0;i<8;i++)nz(t+.35+Math.random()*.7,.02,'highpass',5000,.035,1,sfx)},
-    mute(v){muted=v;if(c)fade(master.gain,v?0:.9,.2)},
-    suspend(h){if(c){h?c.suspend():c.resume()}},
+    mute(v){muted=v;if(c)fade(master.gain,v?0:.9,.2);for(const k in tr)tr[k].a.muted=v},
+    suspend(h){hidden=h;if(c){h?c.suspend():c.resume()}if(h)for(const k in tr)tr[k].a.pause()},
     ready(){return !!c}}
 })();
 const activeSound=()=>A.ready();
@@ -1143,6 +1115,8 @@ yesB.onclick=sayYes;
 noB.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&!noB.classList.contains('turned'))dodge()});
 noB.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'&&!noB.classList.contains('turned')){e.preventDefault();dodge()}});
 noB.onclick=e=>{if(noB.classList.contains('turned'))sayYes();else if(e.detail===0)dodge()};
+/* subtitles appear as soon as a scene starts and type out over TYPE timeline units (about 1.6s in autoplay) */
+const TYPE=1.2;
 const subEl=$('#sub');let subKey='',subShown=-1;
 function setSub(text,n,op){if(text!==subKey||n!==subShown){subKey=text;subShown=n;subEl.innerHTML='';if(text){const a=document.createElement('span');a.textContent=text.slice(0,n);const b=document.createElement('span');b.className='rest';b.textContent=text.slice(n);subEl.append(a,b)}}subEl.style.opacity=op}
 
@@ -1206,9 +1180,9 @@ function tick(ms){
 
   /* words */
   if(sceneNow){const {s,q,a}=sceneNow;const in0=s.q0,in1=s.q1;const vis=q>=in0&&q<=in1;
-    if(s.id==='fire'){const k=clamp((q-.42)/.14),n=Math.ceil(s.sub.length*k);setSub(q>=.42?s.sub:'',n,a)}
+    if(s.id==='fire'){const k=clamp((q-.08)*9.5/TYPE),n=Math.ceil(s.sub.length*k);setSub(q>=.08?s.sub:'',n,a)}
     else if(s.id==='ring'){if(yesAt>0){const y=COPY.sideB.yes,k=clamp((t-yesAt-.6)/1.8);setSub(y,Math.ceil(y.length*k),1)}else setSub('',0,0)}
-    else if(vis){const k=clamp((q-in0)/((in1-in0)*.34)),o=clamp((in1-q)/.05);setSub(s.sub,Math.ceil(s.sub.length*k),o*a)}else setSub('',0,0)}
+    else if(vis){const k=clamp((q-in0)*(s.len||(s.b-s.a))/TYPE),o=clamp((in1-q)/.05);setSub(s.sub,Math.ceil(s.sub.length*k),o*a)}else setSub('',0,0)}
   else setSub('',0,0);
 
   /* HUD */
@@ -1223,8 +1197,9 @@ function tick(ms){
 
   /* music */
   const lv=lights(u,now);
-  const mode=u<NEEDLE?'off':u<uOff?'groove':u<IGNITE?'hush':u<BLOW?'box':u<a8+.4?'hush':u<FLIP_UP?'finale':u<NEEDLE_B?'hush':'sideb';
-  A.setMode(mode,mode==='sideb'?(yesAt>0?1:0):Math.max(0,ch));
+  /* PART 1 from the needle drop until the lights go out, PART 2 from the first candle through the fireworks,
+     PART 3 once the needle drops on side B, PART 4 after YES; silence in the gaps between */
+  A.setSong(u<NEEDLE?'':u<uOff?'p1':u<IGNITE?'':u<FLIP_UP?'p2':u<NEEDLE_B?'':yesAt>0?'p4':'p3');
   const sid=active.length?active[active.length-1].s.id:'';A.bed(sid==='photo'?1:0);
 }
 
