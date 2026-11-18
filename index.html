@@ -64,7 +64,6 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
 #yes{background:var(--amber);color:#2a1426}
 #yes:hover{background:#ffd98a}
 #no{color:var(--paper);background:rgba(10,8,14,.6);border-color:rgba(247,232,200,.5)!important;font-family:var(--zh)!important}
-#no.turned{background:var(--amber);color:#2a1426;border-color:var(--amber)!important}
 #ctrl button.cue{border-color:var(--amber);animation:cue 1.3s ease-in-out infinite}
 @keyframes cue{50%{box-shadow:0 0 0 4px rgba(247,198,103,.3),0 0 18px rgba(247,198,103,.6)}}
 @media (prefers-reduced-motion:reduce){#ctrl button.cue{animation:none}}
@@ -113,7 +112,8 @@ const COPY={
     propose:'不知道妳剛剛的生日願望有沒有剛好許到，我們的未來~',
     ask:'俐君，妳願意和我結婚、走後半輩子嗎?',
     yes:'我就知道妳會YES~ 未來的未來，我們共同體驗每一個時刻~',
-    noTries:['再想想？','真的嗎？','按不到喔']
+    /* NO keeps running away forever, showing one of these at random each time */
+    noTries:['再想想？','真的嗎？','按不到喔','手滑了吧~','妳確定？','不准按！','NO 已經下班了','這顆按鈕壞掉了','偷偷溜走~','抓不到我吧','再給妳一次機會','心跳加速中…','認真的嗎？','我會哭喔','NO 害羞躲起來了','差一點點！','YES 比較香喔','系統忙碌中','NO 去買珍奶了','此按鈕已售完']
   },
   teaseMouse:'移動游標，逗逗牠',
   teaseTouch:'手指滑動，逗逗牠',
@@ -1110,7 +1110,7 @@ const A=(()=>{let c=null,master,verb,sfx,noise,muted=false,hidden=false,song='';
       f.frequency.setValueAtTime(260,t);f.frequency.exponentialRampToValueAtTime(2600,t+1.9);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.16,t+1.7);g.gain.linearRampToValueAtTime(.0001,t+2.05);
       s.connect(f);f.connect(g);out(g,.4,sfx);s.start(t);s.stop(t+2.1)},
     burst(){if(!c)return;const t=c.currentTime;const o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(40,t+.35);env(g.gain,t,.004,.3,.5);o.connect(g);out(g,.3,sfx);o.start(t);o.stop(t+.6);
-      nz(t,.5,'lowpass',2200,.16,.6,sfx);for(let i=0;i<10;i++)nz(t+.1+Math.random()*.9,.02,'highpass',6000,.04,1,sfx);[96,100,103,108].forEach((m,i)=>box(t+.05+i*.06,m,.07,sfx))},
+      nz(t,.5,'lowpass',2200,.16,.6,sfx);for(let i=0;i<10;i++)nz(t+.1+Math.random()*.9,.02,'highpass',6000,.04,1,sfx);[84,88,91,96].forEach((m,i)=>box(t+.05+i*.06,m,.07,sfx))},
     mute(v){muted=v;if(c)fade(master.gain,v?0:.9,.2);for(const k in tr)tr[k].a.muted=v},
     suspend(h){hidden=h;if(c){h?c.suspend():c.resume()}if(h)for(const k in tr)tr[k].a.pause()},
     ready(){return !!c}}
@@ -1151,17 +1151,17 @@ const aim=(x,y)=>{pointer.x=(x*dpr-sw/2-blitOx)/blitZ+VW/2;pointer.y=(y*dpr-sh/2
 addEventListener('pointermove',e=>aim(e.clientX,e.clientY),{passive:true});
 addEventListener('touchmove',e=>{const p=e.touches[0];if(p)aim(p.clientX,p.clientY)},{passive:true});
 const askEl=$('#ask'),yesB=$('#yes'),noB=$('#no');$('#askText').textContent=COPY.sideB.ask;
-let dodges=0;
+let dodges=0,lastTry=-1;
 const sayYes=()=>{if(yesAt>0)return;yesAt=t;askEl.classList.remove('on');A.chime();setTimeout(()=>A.chime(),420)};
-const dodge=()=>{if(yesAt>0)return;dodges++;const tries=COPY.sideB.noTries;
-  if(dodges>tries.length){noB.textContent='YES';noB.classList.add('turned');noB.removeAttribute('style');return}
-  noB.textContent=tries[dodges-1];
+/* NO never gives in: it jumps somewhere random with a random line (never the same one twice in a row) */
+const dodge=()=>{if(yesAt>0)return;dodges++;const tries=COPY.sideB.noTries;let i;do{i=Math.random()*tries.length|0}while(tries.length>1&&i===lastTry);lastTry=i;
+  noB.textContent=tries[i];
   const r=noB.getBoundingClientRect(),m=16;noB.style.position='fixed';noB.style.left=(m+Math.random()*(innerWidth-r.width-m*2))+'px';noB.style.top=(innerHeight*.22+Math.random()*(innerHeight*.42-r.height))+'px';
   yesB.style.transform=`scale(${Math.min(1.7,1+dodges*.18)})`;A.pop()};
 yesB.onclick=sayYes;
-noB.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&!noB.classList.contains('turned'))dodge()});
-noB.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'&&!noB.classList.contains('turned')){e.preventDefault();dodge()}});
-noB.onclick=e=>{if(noB.classList.contains('turned'))sayYes();else if(e.detail===0)dodge()};
+noB.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')dodge()});
+noB.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){e.preventDefault();dodge()}});
+noB.onclick=e=>{if(e.detail===0)dodge()};
 /* subtitles appear as soon as a scene starts and type out over TYPE timeline units (about 1.6s in autoplay) */
 const TYPE=1.2;
 const subEl=$('#sub');let subKey='',subShown=-1;
